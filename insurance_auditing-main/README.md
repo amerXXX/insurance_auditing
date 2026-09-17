@@ -8,6 +8,65 @@ a quantity beyond a contractual limit, a service billed twice.
 
 Your job is to find the wrong ones.
 
+## How to run (reproduce `submission.csv`)
+
+This repository is runnable end-to-end from a fresh clone.
+
+### 1. Set up the environment
+
+```bash
+git clone <this-repo-url>
+cd insurance_auditing-main
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Dependencies are pinned in [`requirements.txt`](requirements.txt). Requires Python 3.12+.
+
+### 2. Run the notebooks
+
+Launch Jupyter (or `jupyter nbconvert`) from this directory so the notebooks can
+auto-detect the repository root:
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace mainHP_1_final.ipynb
+jupyter nbconvert --to notebook --execute --inplace mainHP_4.ipynb
+```
+
+- **`mainHP_1_final.ipynb`** audits hospital 1, the labelled development set.
+  It writes `hospital_1_dev_predictions.csv` and is used to calibrate the
+  approach against `labels/hospital_1_labels.csv`. Hospital 1 is not scored.
+- **`mainHP_4.ipynb`** audits hospital 4 and writes **`submission.csv`** — the
+  scored deliverable, in the exact column format of `submission_template.csv`
+  (`invoice_id, flagged, error_category, expected_total_cents,
+  billed_total_cents, confidence`).
+
+Both notebooks locate the repository root automatically by walking up from the
+current working directory until they find `invoices/` and `contracts/`, so
+they work whether opened from this folder or from a Jupyter server rooted
+elsewhere.
+
+`audit.py` is an earlier reference skeleton for the hospital-1 pipeline (its
+parsing/matching functions are left as stubs); it is not runnable as-is and is
+kept only as a design outline. The notebooks are the actual, working pipeline.
+
+### 3. Output
+
+- `submission.csv` — the scored submission for hospital 4, in template format.
+- `hospital_1_dev_predictions.csv` — hospital 1 development-set predictions
+  (calibration only, not scored).
+- `submission_Combined.csv` (repo root, one level up) — the two files above
+  concatenated for convenience.
+
+### Scope
+
+Given the stated six-to-eight hour time budget and that full coverage of all
+five hospitals is not expected, this submission covers hospital 1
+(development/calibration) and hospital 4 (scored). Hospitals 2, 3, and 5 were
+not attempted. See `../one_page_Logs.pdf` for the decision log and
+`../Error_Analysis_HP1.pdf` for the hospital-1 error analysis.
+
 ## What you have
 
 ```
