@@ -44,7 +44,11 @@ depends on variables the previous ones defined, so run (or read) them in order.
   recall, F1, per-category performance, residual analysis, and confidence
   calibration, printed to the console by its evaluation step. Hospital 1 is
   not scored.
-- **`hospital_4/`** audits hospital 4 — the scored contribution.
+- **`hospital_4/`** audits hospital 4 — a scored contribution.
+- **`hospital_5/`** audits hospital 5 — a scored contribution. This is the
+  contract whose rates genuinely vary by facility and by plan tier (Tables 2
+  and 3), so its pricing engine applies two multiplier stages that were
+  structurally 1× for hospitals 1 and 4.
 
 Each hospital writes its own `hospital_N/submission.csv`; `main.py` then
 combines every `hospital_*/submission.csv` it finds into one file at the repo
@@ -63,16 +67,24 @@ step that writes `hospital_5/submission.csv`. `main.py` discovers
   hospital `main.py` ran.
 - `notebooks_py/hospital_1/submission.csv` — hospital 1's own predictions
   (development/calibration only, not scored).
-- `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions
-  (the scored contribution to the combined file).
+- `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions.
+- `notebooks_py/hospital_5/submission.csv` — hospital 5's own predictions.
 
 ### Scope
 
 Given the stated six-to-eight hour time budget and that full coverage of all
 five hospitals is not expected, this submission covers hospital 1
-(development/calibration) and hospital 4 (scored). Hospitals 2, 3, and 5 were
-not attempted. See `../one_page_Logs.pdf` for the decision log and
-`../Error_Analysis_HP1.pdf` for the hospital-1 error analysis.
+(development/calibration, not scored) plus hospitals 4 and 5 (scored).
+Hospitals 2 and 3 were not attempted.
+
+Hospital 5 has no labels, so its pipeline is validated internally instead: of
+the 974 invoices it reports as clean, 100% reconcile exactly against their
+billed totals, and that holds independently across all three facilities and
+all three plan tiers — the check that would break first if a multiplier
+column were mismapped. Per-hospital decision logs are the trailing comment
+block of each pipeline's last step. See `../one_page_Logs.pdf` for the
+one-page decision log and `../Error_Analysis_HP1.pdf` for the hospital-1
+error analysis.
 
 ## What you have
 
