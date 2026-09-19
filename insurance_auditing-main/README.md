@@ -50,6 +50,13 @@ depends on variables the previous ones defined, so run (or read) them in order.
   sentences spread across thirteen "Contracted Services" articles interleaved
   with unrelated boilerplate. Its extraction step asserts every provision count
   against the raw contract text, so an unparsed clause fails the run.
+- **`hospital_3/`** audits hospital 3 — a scored contribution. This is the
+  contract split across three documents (Base Agreement, Appendix B rate
+  schedule, and Amendment No. 1), which its extraction step cross-checks
+  against one another. Amendment No. 1 takes effect 1 January 2025 **by
+  Service Date**, so seven services carry two different rates during the term
+  and two are not billable at all before that date; its pricing engine
+  resolves the applicable rate per line.
 - **`hospital_4/`** audits hospital 4 — a scored contribution.
 - **`hospital_5/`** audits hospital 5 — a scored contribution. This is the
   contract whose rates genuinely vary by facility and by plan tier (Tables 2
@@ -75,21 +82,20 @@ unless a labels file exists for it — no changes to `main.py` are needed.
 ### 3. Output
 
 - `submission.csv` (repo root) — the combined, **scored-only** submission
-  (currently hospitals 2, 4 and 5).
+  (currently hospitals 2, 3, 4 and 5 — all four scored hospitals).
 - `notebooks_py/hospital_1/submission.csv` — hospital 1's own predictions
   (development/calibration only, not scored, excluded from the combined file).
 - `notebooks_py/hospital_2/submission.csv` — hospital 2's own predictions.
+- `notebooks_py/hospital_3/submission.csv` — hospital 3's own predictions.
 - `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions.
 - `notebooks_py/hospital_5/submission.csv` — hospital 5's own predictions.
 
 ### Scope
 
-Given the stated six-to-eight hour time budget and that full coverage of all
-five hospitals is not expected, this submission covers hospital 1
-(development/calibration, not scored) plus hospitals 2, 4 and 5 (scored).
-Hospital 3 was not attempted.
+This submission covers all four scored hospitals (2, 3, 4 and 5) plus
+hospital 1 as the labelled development set used to calibrate the method.
 
-Hospitals 2, 4 and 5 have no labels, so their pipelines are validated
+Hospitals 2, 3, 4 and 5 have no labels, so their pipelines are validated
 internally instead: every invoice each one reports as clean must reconcile
 exactly against its billed total. Hospital 5 does so for all 974 of its clean
 invoices, and holds at 100% independently within each of the three facilities
@@ -97,7 +103,11 @@ and each of the three plan tiers — the check that would break first if a
 multiplier column were mismapped. Hospital 2 does so for all 1,050 of its
 clean invoices, and additionally asserts that every provision it parsed out of
 the prose is accounted for in the contract text and that all 76 contracted
-rates are actually billed somewhere in the data. Per-hospital decision logs are the trailing comment
+rates are actually billed somewhere in the data. Hospital 3 does so for all
+862 of its clean invoices, and holds at 100% independently for invoices dated
+before the amendment, on or after it, and spanning both — the check that would
+break first if the amendment's effective date were applied wrongly.
+Per-hospital decision logs are the trailing comment
 block of each pipeline's last step. See `../DecisionLogs.pdf`
 (source: `../DecisionLogs.tex`) for the one-page decision log and
 `../Error_Analysis_HP1.pdf` for the hospital-1 error analysis.
