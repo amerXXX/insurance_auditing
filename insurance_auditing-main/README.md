@@ -10,54 +10,61 @@ Your job is to find the wrong ones.
 
 ## How to run (reproduce `submission.csv`)
 
-This repository is runnable end-to-end from a fresh clone.
+This repository is runnable end-to-end from a fresh clone. The pipeline lives as
+plain Python files under `notebooks_py/`, a sibling folder of this one — there is
+no `.ipynb` in this repository.
 
 ### 1. Set up the environment
 
 ```bash
 git clone <this-repo-url>
-cd insurance_auditing-main
+cd <repo-root>                   # the folder containing both insurance_auditing-main/ and notebooks_py/
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r insurance_auditing-main/requirements.txt
 ```
 
-Dependencies are pinned in [`requirements.txt`](requirements.txt). Requires Python 3.12+.
+Dependencies are pinned in [`requirements.txt`](requirements.txt) (just `pandas`).
+Requires Python 3.10+.
 
-### 2. Run the notebooks
-
-Launch Jupyter (or `jupyter nbconvert`) from this directory so the notebooks can
-auto-detect the repository root:
+### 2. Run the pipeline
 
 ```bash
-jupyter nbconvert --to notebook --execute --inplace mainHP_1_final.ipynb
-jupyter nbconvert --to notebook --execute --inplace mainHP_4.ipynb
+python notebooks_py/main.py
 ```
 
-- **`mainHP_1_final.ipynb`** audits hospital 1, the labelled development set.
-  It writes `hospital_1_dev_predictions.csv` and is used to calibrate the
-  approach against `labels/hospital_1_labels.csv`. Hospital 1 is not scored.
-- **`mainHP_4.ipynb`** audits hospital 4 and writes **`submission.csv`** — the
-  scored deliverable, in the exact column format of `submission_template.csv`
-  (`invoice_id, flagged, error_category, expected_total_cents,
-  billed_total_cents, confidence`).
+This runs every hospital's pipeline in turn and combines their outputs. Each
+`notebooks_py/hospital_N/` folder holds a numbered sequence of plain Python
+files (`01_setup.py` through the last step), meant to be read and executed top
+to bottom — like notebook cells split into files for readability. Each step
+depends on variables the previous ones defined, so run (or read) them in order.
 
-Both notebooks locate the repository root automatically by walking up from the
-current working directory until they find `invoices/` and `contracts/`, so
-they work whether opened from this folder or from a Jupyter server rooted
-elsewhere.
+- **`hospital_1/`** audits hospital 1, the labelled development set, and
+  evaluates against `labels/hospital_1_labels.csv` — accuracy, precision,
+  recall, F1, per-category performance, residual analysis, and confidence
+  calibration, printed to the console by its evaluation step. Hospital 1 is
+  not scored.
+- **`hospital_4/`** audits hospital 4 — the scored contribution.
 
-`audit.py` is an earlier reference skeleton for the hospital-1 pipeline (its
-parsing/matching functions are left as stubs); it is not runnable as-is and is
-kept only as a design outline. The notebooks are the actual, working pipeline.
+Each hospital writes its own `hospital_N/submission.csv`; `main.py` then
+combines every `hospital_*/submission.csv` it finds into one file at the repo
+root: **`submission.csv`**, in the exact column format of
+`submission_template.csv` (`invoice_id, flagged, error_category,
+expected_total_cents, billed_total_cents, confidence`).
+
+To add a new hospital once its data/contract exist (e.g. hospital 5): create
+`notebooks_py/hospital_5/` with the same numbered-file pattern, ending in a
+step that writes `hospital_5/submission.csv`. `main.py` discovers
+`hospital_*` folders automatically — it needs no changes.
 
 ### 3. Output
 
-- `submission.csv` — the scored submission for hospital 4, in template format.
-- `hospital_1_dev_predictions.csv` — hospital 1 development-set predictions
-  (calibration only, not scored).
-- `submission_Combined.csv` (repo root, one level up) — the two files above
-  concatenated for convenience.
+- `submission.csv` (repo root) — the combined submission across every
+  hospital `main.py` ran.
+- `notebooks_py/hospital_1/submission.csv` — hospital 1's own predictions
+  (development/calibration only, not scored).
+- `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions
+  (the scored contribution to the combined file).
 
 ### Scope
 
