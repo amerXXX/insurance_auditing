@@ -44,11 +44,17 @@ depends on variables the previous ones defined, so run (or read) them in order.
   recall, F1, per-category performance, residual analysis, and confidence
   calibration, printed to the console by its evaluation step. Hospital 1 is
   not scored.
+- **`hospital_2/`** audits hospital 2 — a scored contribution. This is the
+  prose contract: it states "No tables are used in this instrument", and every
+  rate, cap, premium, uplift, discount and bundle is parsed out of legal
+  sentences spread across thirteen "Contracted Services" articles interleaved
+  with unrelated boilerplate. Its extraction step asserts every provision count
+  against the raw contract text, so an unparsed clause fails the run.
 - **`hospital_4/`** audits hospital 4 — a scored contribution.
 - **`hospital_5/`** audits hospital 5 — a scored contribution. This is the
   contract whose rates genuinely vary by facility and by plan tier (Tables 2
   and 3), so its pricing engine applies two multiplier stages that were
-  structurally 1× for hospitals 1 and 4.
+  structurally 1× for hospitals 1, 2 and 4.
 
 Each hospital writes its own `hospital_N/submission.csv`, always — dev-only
 hospitals included. `main.py` then combines every **scored** hospital's
@@ -69,9 +75,10 @@ unless a labels file exists for it — no changes to `main.py` are needed.
 ### 3. Output
 
 - `submission.csv` (repo root) — the combined, **scored-only** submission
-  (currently hospitals 4 and 5).
+  (currently hospitals 2, 4 and 5).
 - `notebooks_py/hospital_1/submission.csv` — hospital 1's own predictions
   (development/calibration only, not scored, excluded from the combined file).
+- `notebooks_py/hospital_2/submission.csv` — hospital 2's own predictions.
 - `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions.
 - `notebooks_py/hospital_5/submission.csv` — hospital 5's own predictions.
 
@@ -79,14 +86,18 @@ unless a labels file exists for it — no changes to `main.py` are needed.
 
 Given the stated six-to-eight hour time budget and that full coverage of all
 five hospitals is not expected, this submission covers hospital 1
-(development/calibration, not scored) plus hospitals 4 and 5 (scored).
-Hospitals 2 and 3 were not attempted.
+(development/calibration, not scored) plus hospitals 2, 4 and 5 (scored).
+Hospital 3 was not attempted.
 
-Hospital 5 has no labels, so its pipeline is validated internally instead: of
-the 974 invoices it reports as clean, 100% reconcile exactly against their
-billed totals, and that holds independently across all three facilities and
-all three plan tiers — the check that would break first if a multiplier
-column were mismapped. Per-hospital decision logs are the trailing comment
+Hospitals 2, 4 and 5 have no labels, so their pipelines are validated
+internally instead: every invoice each one reports as clean must reconcile
+exactly against its billed total. Hospital 5 does so for all 974 of its clean
+invoices, and holds at 100% independently within each of the three facilities
+and each of the three plan tiers — the check that would break first if a
+multiplier column were mismapped. Hospital 2 does so for all 1,050 of its
+clean invoices, and additionally asserts that every provision it parsed out of
+the prose is accounted for in the contract text and that all 76 contracted
+rates are actually billed somewhere in the data. Per-hospital decision logs are the trailing comment
 block of each pipeline's last step. See `../DecisionLogs.pdf`
 (source: `../DecisionLogs.tex`) for the one-page decision log and
 `../Error_Analysis_HP1.pdf` for the hospital-1 error analysis.
