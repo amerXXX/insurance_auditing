@@ -103,8 +103,10 @@ print("Confidence distribution:", invoice_summary["confidence"].value_counts().s
 print("Invoices with provisional expected totals:", int(invoice_summary["any_provisional_expected"].sum()))
 
 # Hospital 4 output in the exact repository submission schema, written as this
-# hospital's own submission.csv (uniform per-hospital naming, so ../main.py
-# can combine every hospital_*/submission.csv generically).
+# hospital's own predictions.csv (uniform per-hospital naming, so ../main.py
+# can combine every hospital_*/predictions.csv generically). Only the combined
+# file that main.py writes at the repo root is named submission.csv -- there is
+# exactly one submission file in this repository.
 submission_hospital_4 = invoice_summary[
     ["invoice_id", "flagged", "error_category", "expected_total_cents", "billed_total_cents", "confidence"]
 ].copy()
@@ -119,7 +121,7 @@ assert submission_hospital_4["flagged"].isin([0, 1]).all()
 assert submission_hospital_4["confidence"].between(0, 1).all()
 assert len(submission_hospital_4) == invoices["invoice_id"].nunique()
 
-output_path = Path(globals().get("__file__", ".")).resolve().parent / "submission.csv"
+output_path = Path(globals().get("__file__", ".")).resolve().parent / "predictions.csv"
 submission_hospital_4.to_csv(output_path, index=False)
 print(f"Wrote {len(submission_hospital_4)} rows to {output_path}")
 
@@ -156,18 +158,26 @@ print(f"Wrote {len(submission_hospital_4)} rows to {output_path}")
 # alternative reading would confine 11.3 to only the capped services, which would leave the
 # 5 flagged cross-invoice duplicates on uncapped services unflagged.
 #
-# Known limitation -- bundle rates are not part of the service-matcher's secondary price
-# evidence. plausible_unit_prices() (used to break text-matching ties) only considers
-# base/premium/discount-derived prices, not bundle-substituted rates. Inspecting
-# INV-H4-000002, the ambiguous description "CARDIAC physio SESS" ties between "Outpatient
-# Cardiac Physiotherapy Session" and "Emergency Cardiac Physiotherapy Session"; its billed
-# price (GBP 84.00) matches the Section 7 bundled rate for "Emergency Cardiac
-# Physiotherapy Session" exactly (and that invoice also bills "Extended Obstetric Case
-# Conference," its bundle partner, on the same date) -- strong secondary evidence the
-# matcher does not use. The line is conservatively left needs_review rather than resolved,
-# consistent with the "flag, don't guess" policy, but it means bundle-linked ambiguous
-# descriptions are systematically under-resolved. This carries over unchanged from Hospital
-# 1, which has the same gap.
+# Bundle rates as secondary price evidence -- limitation found, then closed.
+# plausible_unit_prices() (used to break text-matching ties) originally considered only
+# base/premium/discount-derived prices, not bundle-substituted rates. That left the
+# ambiguous description "CARDIAC physio SESS" unresolvable: it ties between "Outpatient
+# Cardiac Physiotherapy Session" and "Emergency Cardiac Physiotherapy Session", and its
+# billed price (GBP 84.00) is exactly the Section 7 bundled rate for the latter -- a value
+# the plausible set did not contain, so no candidate looked consistent.
+#
+# The cost was larger than it first appeared. An unmatched description also stops the
+# bundle being detected at all, which then misprices the partner Service on the same
+# invoice. "CARDIAC physio SESS" and "RHEUM rehabilitation PROGRAMME" between them left 48
+# invoices either flagged unknown_service or carrying a spurious unit_price_mismatch on
+# their partners "Extended Obstetric Case Conference" and "Ambulatory Paediatric Critical
+# Care Occupancy" -- which is why Hospital 4 was flagging 12.7% of its invoices while the
+# other three hospitals sat near 7%.
+#
+# Including bundled rates in the plausible set resolves both descriptions by secondary
+# price support (each to the bundle partner the billed price implies), and brings the flag
+# rate to 7.5%, in line with the others. Clean-invoice reconciliation remains exactly 100%,
+# so the change resolved descriptions rather than loosening the pricing check.
 #
 # Reused invoice IDs and occurrence mapping. Identical convention to Hospital 1: the
 # line-ID group prefix recovers the original transaction group, mapped chronologically onto

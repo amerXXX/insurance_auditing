@@ -7,11 +7,13 @@ Each hospital_N/ folder holds a numbered pipeline (01_setup.py, 02_..., ...,
 NN_output.py). This script runs those files in order, in a single shared
 namespace per hospital -- exactly like running notebook cells top to bottom,
 since each step depends on variables the previous ones defined. The last step
-in every hospital's pipeline writes that hospital's own hospital_N/submission.csv
+in every hospital's pipeline writes that hospital's own hospital_N/predictions.csv
 (every hospital's own file is always written, dev-only ones included).
 
-This script then concatenates every SCORED hospital's submission.csv into one
-combined file at <repo root>/submission.csv. A hospital counts as scored unless
+This script then concatenates every SCORED hospital's predictions.csv into one
+combined file at <repo root>/submission.csv -- the single submission file in this
+repository. The per-hospital files are deliberately NOT named submission.csv, so
+there is never any doubt about which file is the deliverable. A hospital counts as scored unless
 insurance_auditing-main/labels/<hospital_N>_labels.csv exists -- a labels file
 means it is a development/calibration set (Hospital 1's role in this exercise),
 not part of the graded submission. This mirrors the exercise's own design: only
@@ -19,7 +21,7 @@ the labelled hospital is for calibration, everything else is scored.
 
 To add a new hospital (e.g. hospital_2) once its data/contract exist under
 insurance_auditing-main/: create notebooks_py/hospital_2/ with the same
-numbered-file pattern, ending with a step that writes hospital_2/submission.csv
+numbered-file pattern, ending with a step that writes hospital_2/predictions.csv
 in the exact submission_template.csv schema. No changes to this script are
 needed -- hospital_* folders are discovered automatically, and it is included
 in the combined file unless a labels file exists for it.
@@ -56,7 +58,7 @@ def run_hospital(hospital_dir: Path) -> Path:
         code = compile(script.read_text(encoding="utf-8"), str(script), "exec")
         exec(code, namespace)
 
-    output_path = hospital_dir / "submission.csv"
+    output_path = hospital_dir / "predictions.csv"
     if not output_path.exists():
         raise FileNotFoundError(
             f"{hospital_dir.name}'s pipeline finished but did not write {output_path}"
@@ -78,7 +80,7 @@ def main() -> None:
         output_path = run_hospital(hospital_dir)
         df = pd.read_csv(output_path)
         assert df.columns.tolist() == REQUIRED_COLUMNS, (
-            f"{hospital_dir.name}/submission.csv has unexpected columns: {df.columns.tolist()}"
+            f"{hospital_dir.name}/predictions.csv has unexpected columns: {df.columns.tolist()}"
         )
         per_hospital.append((hospital_dir.name, df, is_scored(hospital_dir.name)))
 

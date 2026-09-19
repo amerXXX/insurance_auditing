@@ -63,9 +63,11 @@ depends on variables the previous ones defined, so run (or read) them in order.
   and 3), so its pricing engine applies two multiplier stages that were
   structurally 1× for hospitals 1, 2 and 4.
 
-Each hospital writes its own `hospital_N/submission.csv`, always — dev-only
-hospitals included. `main.py` then combines every **scored** hospital's
-`submission.csv` into one file at the repo root: **`submission.csv`**, in the
+Each hospital writes its own `hospital_N/predictions.csv`, always — dev-only
+hospitals included. Only the combined file is named `submission.csv`, so there is
+exactly one submission file in the repository and no ambiguity about which is the
+deliverable. `main.py` then combines every **scored** hospital's
+`predictions.csv` into one file at the repo root: **`submission.csv`**, in the
 exact column format of `submission_template.csv` (`invoice_id, flagged,
 error_category, expected_total_cents, billed_total_cents, confidence`). A
 hospital counts as scored unless `labels/<hospital_N>_labels.csv` exists —
@@ -75,7 +77,7 @@ combined file.
 
 To add a new hospital once its data/contract exist (e.g. hospital 2): create
 `notebooks_py/hospital_2/` with the same numbered-file pattern, ending in a
-step that writes `hospital_2/submission.csv`. `main.py` discovers
+step that writes `hospital_2/predictions.csv`. `main.py` discovers
 `hospital_*` folders automatically and includes it in the combined file
 unless a labels file exists for it — no changes to `main.py` are needed.
 
@@ -83,12 +85,12 @@ unless a labels file exists for it — no changes to `main.py` are needed.
 
 - `submission.csv` (repo root) — the combined, **scored-only** submission
   (currently hospitals 2, 3, 4 and 5 — all four scored hospitals).
-- `notebooks_py/hospital_1/submission.csv` — hospital 1's own predictions
+- `notebooks_py/hospital_1/predictions.csv` — hospital 1's own predictions
   (development/calibration only, not scored, excluded from the combined file).
-- `notebooks_py/hospital_2/submission.csv` — hospital 2's own predictions.
-- `notebooks_py/hospital_3/submission.csv` — hospital 3's own predictions.
-- `notebooks_py/hospital_4/submission.csv` — hospital 4's own predictions.
-- `notebooks_py/hospital_5/submission.csv` — hospital 5's own predictions.
+- `notebooks_py/hospital_2/predictions.csv` — hospital 2's own predictions.
+- `notebooks_py/hospital_3/predictions.csv` — hospital 3's own predictions.
+- `notebooks_py/hospital_4/predictions.csv` — hospital 4's own predictions.
+- `notebooks_py/hospital_5/predictions.csv` — hospital 5's own predictions.
 
 ### Scope
 

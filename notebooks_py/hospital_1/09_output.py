@@ -2,8 +2,10 @@
 # (uses invoice_summary).
 #
 # Hospital 1 output in the exact submission-template schema, written as this
-# hospital's own submission.csv (uniform per-hospital naming, so ../main.py
-# can combine every hospital_*/submission.csv generically). Hospital 1 is a
+# hospital's own predictions.csv (uniform per-hospital naming, so ../main.py
+# can combine every hospital_*/predictions.csv generically). Only the combined
+# file that main.py writes at the repo root is named submission.csv -- there is
+# exactly one submission file in this repository. Hospital 1 is a
 # calibration artifact only, though -- it is NOT the scored holdout; its
 # predictions are checked against labels/hospital_1_labels.csv in 08_evaluation.py.
 
@@ -21,7 +23,7 @@ assert submission_hospital_1["invoice_id"].is_unique
 assert submission_hospital_1["flagged"].isin([0, 1]).all()
 assert submission_hospital_1["confidence"].between(0, 1).all()
 
-output_path = Path(globals().get("__file__", ".")).resolve().parent / "submission.csv"
+output_path = Path(globals().get("__file__", ".")).resolve().parent / "predictions.csv"
 submission_hospital_1.to_csv(output_path, index=False)
 print(f"Wrote {len(submission_hospital_1)} rows to {output_path}")
 

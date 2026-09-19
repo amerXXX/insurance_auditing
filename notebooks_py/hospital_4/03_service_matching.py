@@ -152,13 +152,32 @@ MIN_SCORE = 0.55
 def half_up(value):
     return int(Decimal(value).to_integral_value(rounding=ROUND_HALF_UP))
 
+_bundled_rate_lookup = {}
+for _row in bundles.itertuples():
+    _bundled_rate_lookup.setdefault(_row.service_a, set()).add(_row.bundled_rate_a_cents)
+    _bundled_rate_lookup.setdefault(_row.service_b, set()).add(_row.bundled_rate_b_cents)
+
+
 def plausible_unit_prices(service):
+    """Unit prices a line of this service could legitimately carry (secondary evidence only).
+
+    Includes the Section 7 bundled substituted rate. An earlier version of this function
+    considered only base/premium/discount-derived prices, which left bundle-linked
+    ambiguous descriptions unresolvable: the billed price matched a bundled rate the set
+    did not contain, so no candidate looked consistent and the description went to review.
+    That in turn stopped the bundle being detected at all, mispricing the partner service
+    on the same invoice. Hospitals 2, 3 and 5 model bundled rates for this reason; this
+    brings Hospital 4 into line with them.
+    """
     base = int(rate_schedule.loc[rate_schedule["service"] == service, "base_rate_cents"].iloc[0])
-    prices = {base}
-    for _, r in threshold_premiums.loc[threshold_premiums["service"] == service].iterrows():
-        prices.add(half_up(Decimal(base) * (Decimal(100 + int(r["premium_percent"])) / 100)))
-    for _, r in volume_discounts.loc[volume_discounts["service"] == service].iterrows():
-        prices.add(half_up(Decimal(base) * (Decimal(100 - int(r["discount_percent"])) / 100)))
+    starting_rates = {base} | {int(r) for r in _bundled_rate_lookup.get(service, set())}
+    prices = set()
+    for start in starting_rates:
+        prices.add(start)
+        for _, r in threshold_premiums.loc[threshold_premiums["service"] == service].iterrows():
+            prices.add(half_up(Decimal(start) * (Decimal(100 + int(r["premium_percent"])) / 100)))
+        for _, r in volume_discounts.loc[volume_discounts["service"] == service].iterrows():
+            prices.add(half_up(Decimal(start) * (Decimal(100 - int(r["discount_percent"])) / 100)))
     return prices
 
 # ---- Resolve every distinct billing description against the Hospital 4 rate schedule ----

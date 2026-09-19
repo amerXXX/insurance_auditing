@@ -114,8 +114,10 @@ print("Invoices with provisional expected totals:", int(invoice_summary["any_pro
 print("Match status (distinct descriptions):", description_matches["match_status"].value_counts().to_dict())
 
 # Hospital 5 output in the exact repository submission schema, written as this
-# hospital's own submission.csv (uniform per-hospital naming, so ../main.py
-# can combine every hospital_*/submission.csv generically).
+# hospital's own predictions.csv (uniform per-hospital naming, so ../main.py
+# can combine every hospital_*/predictions.csv generically). Only the combined
+# file that main.py writes at the repo root is named submission.csv -- there is
+# exactly one submission file in this repository.
 submission_hospital_5 = invoice_summary[
     ["invoice_id", "flagged", "error_category", "expected_total_cents", "billed_total_cents", "confidence"]
 ].copy()
@@ -130,7 +132,7 @@ assert submission_hospital_5["flagged"].isin([0, 1]).all()
 assert submission_hospital_5["confidence"].between(0, 1).all()
 assert len(submission_hospital_5) == invoices["invoice_id"].nunique()
 
-output_path = Path(globals().get("__file__", ".")).resolve().parent / "submission.csv"
+output_path = Path(globals().get("__file__", ".")).resolve().parent / "predictions.csv"
 submission_hospital_5.to_csv(output_path, index=False)
 print(f"Wrote {len(submission_hospital_5)} rows to {output_path}")
 

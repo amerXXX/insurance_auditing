@@ -12,11 +12,11 @@
 
 \begin{center}
 {\large\bfseries Decision Log}\\[2pt]
-H1 \texttt{provider\_services\_agreement.md} (INS-H1-2024-0417) \quad
-H4 \texttt{conditional\_reimbursement\_agreement.md} (INS-H4-2024-2049) \quad
-H5 \texttt{network\_reimbursement\_agreement.md} (INS-H5-2024-0731)\\[2pt]
-Hospital 1 is the labelled development set (calibration only, not scored); Hospitals 4 and 5 are scored.
-Hospitals 2 and 3 were not attempted.
+H1 \texttt{provider\_services\_agreement.md} \quad H2 \texttt{master\_services\_agreement.md} \quad
+H3 \texttt{base\_agreement.md} + \texttt{appendix\_b} + \texttt{amendment\_no\_1} \quad
+H4 \texttt{conditional\_reimbursement\_agreement.md} \quad H5 \texttt{network\_reimbursement\_agreement.md}\\[2pt]
+Hospital 1 is the labelled development set (calibration only, not scored); Hospitals 2, 3, 4 and 5 are scored,
+and all four are covered.
 \end{center}
 
 \vspace{-3pt}
@@ -24,16 +24,18 @@ Hospitals 2 and 3 were not attempted.
 \vspace{-4pt}
 
 \begin{center}
-\begin{tabular}{@{}llll@{}}
+\begin{tabular}{@{}llllll@{}}
 \toprule
-& \textbf{Hospital 1} & \textbf{Hospital 4} & \textbf{Hospital 5} \\
+& \textbf{H1} & \textbf{H2} & \textbf{H3} & \textbf{H4} & \textbf{H5} \\
 \midrule
-Base rates            & Section 4              & Section 3               & Section 4, Table 1 \\
-Daily caps            & Section 8              & Section 6               & column of Table 1 \\
-Facility multiplier   & single site, $1\times$ & single site, $1\times$  & Table 2, 3 sites \\
-Plan-tier multiplier  & tier-blind, $1\times$  & tier-blind, $1\times$   & Table 3, 3 tiers \\
-Weekend uplifts       & Section 6              & Section 10: ``None.''   & Section 6 \\
-Invoicing checks      & Section 11             & Section 11              & Section 10 \\
+Rates             & Sec.\ 4 table & prose, 13 articles & Appx B + amendment    & Sec.\ 3 table & Sec.\ 4 Table 1 \\
+Daily caps        & Sec.\ 8       & in each clause     & Appx B col.\ = Sec.\ 7 & Sec.\ 6      & Table 1 column \\
+Facility mult.    & $1\times$     & $1\times$          & $1\times$             & $1\times$     & Table 2, 3 sites \\
+Plan-tier mult.   & $1\times$     & $1\times$          & $1\times$             & $1\times$     & Table 3, 3 tiers \\
+Weekend uplifts   & Sec.\ 6       & in each clause     & Sec.\ 5               & none          & Sec.\ 6 \\
+Exclusion windows & Sec.\ 10      & \textbf{none}      & Sec.\ 9               & Sec.\ 9       & Sec.\ 9 \\
+Duplicate rule    & Sec.\ 11.4    & \textbf{none}      & Sec.\ 10.3            & Sec.\ 11.3    & Sec.\ 10.3 \\
+Invoicing checks  & Sec.\ 11      & Art.\ XIII         & Sec.\ 10              & Sec.\ 11      & Sec.\ 10 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -81,6 +83,17 @@ alternative differs only by rounding, and only on lines where both fire.
 occurrence}, recovering the transaction group from the line-ID prefix and mapping groups chronologically onto
 invoice occurrences. Validated against H1's labels --- a calibration choice, disclosed as such rather than
 presented as contract-derived.
+\item \textbf{Rules a contract does not contain (H2).} H2 defines no exclusion windows and no prohibition on
+billing the same service twice for the same patient and date --- verified by searching its full text for every
+wording the other three use. The other contracts all zero a later duplicate. \textbf{Took the absence at face
+value:} repeats are priced normally and not flagged, since flagging them would invent a term this provider
+never agreed to. Both absences are asserted in code so a revision cannot reintroduce them silently.
+\item \textbf{Which rate applies, and when (H3).} H3's Amendment No.\ 1 substitutes seven rates and adds two
+services. A1.1.2 applies it \emph{by Service Date} --- ``the date on which an invoice is issued is irrelevant''
+--- and roughly half the line items fall either side of 1 January 2025. \textbf{Took Service Date}, pricing each
+line from the rate in force on its own date; the two added services are not billable at all before that date,
+reported separately from a wrong rate. The amendment's pre-2025 column was checked against Appendix B and
+restates it exactly, so the earlier period is not in dispute.
 \item \textbf{Two sources for the same rate tables (H5).} The tables ship inline in the agreement and again as
 a separate PDF, with no stated precedence. Rather than pick one, both were extracted and compared
 value-by-value before any pricing code was written: all 84 services agree exactly on unit basis, base rate,
@@ -106,11 +119,8 @@ Radiotherapy'' matches confidently to the sole Outpatient-prefixed candidate, wh
 and gap thresholds did not change this match while breaking two correct ones; a missing-anchor penalty fixed
 it but cost 47 false positives (precision $1.000\to0.552$). \emph{Done:} accepted as a disclosed limitation
 --- one invoice in 913 is not worth 47 wrong accusations.
-\item \textbf{Bundled rates as secondary price evidence.} The matcher's tie-break ignores bundle-substituted
-rates in H1 and H4, so bundle-linked ambiguous descriptions are systematically under-resolved. \emph{Done:}
-left them in the review queue under ``flag, don't guess''; closed for H5, whose plausible-price set models
-both the multipliers and the bundled rate.
-\item \textbf{No ground truth beyond Hospital 1.} H4 and H5 inherit H1's calibration rather than being
+\item \textbf{Bundled rates as secondary price evidence --- found, then closed.} The matcher's tie-break originally ignored bundle-substituted rates, leaving bundle-linked descriptions unresolvable. The cost was larger than it looked: an unmatched description also stops the bundle being detected, mispricing its partner on the same invoice. On H4 two such descriptions accounted for 48 invoices either flagged \texttt{unknown\_service} or carrying a spurious price mismatch on their partners. \emph{Done:} the plausible-price set now models bundled rates in every hospital; H4's flag rate fell from 12.7\% to 7.5\%, in line with the others, with clean-invoice reconciliation still exactly 100\%.
+\item \textbf{No ground truth beyond Hospital 1.} H2, H3, H4 and H5 inherit H1's calibration rather than being
 verified against labels, so their confidence figures are carried over, not measured. \emph{Done:} validated
 H5 internally instead --- all 974 invoices it reports clean reconcile exactly against billed totals, and that
 holds at 100\% independently within each of the three facilities and each of the three plan tiers, the check

@@ -122,7 +122,7 @@ assert submission_hospital_2["flagged"].isin([0, 1]).all()
 assert submission_hospital_2["confidence"].between(0, 1).all()
 assert len(submission_hospital_2) == invoices["invoice_id"].nunique()
 
-output_path = Path(globals().get("__file__", ".")).resolve().parent / "submission.csv"
+output_path = Path(globals().get("__file__", ".")).resolve().parent / "predictions.csv"
 submission_hospital_2.to_csv(output_path, index=False)
 print(f"Wrote {len(submission_hospital_2)} rows to {output_path}")
 
