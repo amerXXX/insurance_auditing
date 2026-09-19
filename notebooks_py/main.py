@@ -7,26 +7,39 @@ Each hospital_N/ folder holds a numbered pipeline (01_setup.py, 02_..., ...,
 NN_output.py). This script runs those files in order, in a single shared
 namespace per hospital -- exactly like running notebook cells top to bottom,
 since each step depends on variables the previous ones defined. The last step
-in every hospital's pipeline writes that hospital's own hospital_N/submission.csv.
-This script then concatenates every hospital_*/submission.csv it finds into one
-combined file at <repo root>/submission.csv (the folder that contains both
-notebooks_py/ and insurance_auditing-main/).
+in every hospital's pipeline writes that hospital's own hospital_N/submission.csv
+(every hospital's own file is always written, dev-only ones included).
 
-To add a new hospital (e.g. hospital_5) once its data/contract exist under
-insurance_auditing-main/: create notebooks_py/hospital_5/ with the same
-numbered-file pattern, ending with a step that writes hospital_5/submission.csv
+This script then concatenates every SCORED hospital's submission.csv into one
+combined file at <repo root>/submission.csv. A hospital counts as scored unless
+insurance_auditing-main/labels/<hospital_N>_labels.csv exists -- a labels file
+means it is a development/calibration set (Hospital 1's role in this exercise),
+not part of the graded submission. This mirrors the exercise's own design: only
+the labelled hospital is for calibration, everything else is scored.
+
+To add a new hospital (e.g. hospital_2) once its data/contract exist under
+insurance_auditing-main/: create notebooks_py/hospital_2/ with the same
+numbered-file pattern, ending with a step that writes hospital_2/submission.csv
 in the exact submission_template.csv schema. No changes to this script are
-needed -- hospital_* folders are discovered automatically.
+needed -- hospital_* folders are discovered automatically, and it is included
+in the combined file unless a labels file exists for it.
 """
 from pathlib import Path
 import sys
 import pandas as pd
 
 NOTEBOOKS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = NOTEBOOKS_DIR.parent
+LABELS_DIR = REPO_ROOT / "insurance_auditing-main" / "labels"
 REQUIRED_COLUMNS = [
     "invoice_id", "flagged", "error_category",
     "expected_total_cents", "billed_total_cents", "confidence",
 ]
+
+
+def is_scored(hospital_name: str) -> bool:
+    """A hospital is scored unless it has a labels file (dev/calibration set)."""
+    return not (LABELS_DIR / f"{hospital_name}_labels.csv").exists()
 
 
 def run_hospital(hospital_dir: Path) -> Path:
@@ -67,17 +80,21 @@ def main() -> None:
         assert df.columns.tolist() == REQUIRED_COLUMNS, (
             f"{hospital_dir.name}/submission.csv has unexpected columns: {df.columns.tolist()}"
         )
-        per_hospital.append((hospital_dir.name, df))
+        per_hospital.append((hospital_dir.name, df, is_scored(hospital_dir.name)))
 
-    combined = pd.concat([df for _, df in per_hospital], ignore_index=True)
+    scored = [df for _, df, scored_flag in per_hospital if scored_flag]
+    combined = pd.concat(scored, ignore_index=True)
     assert combined["invoice_id"].is_unique, "Duplicate invoice_id across hospitals"
 
-    combined_output_path = NOTEBOOKS_DIR.parent / "submission.csv"
+    combined_output_path = REPO_ROOT / "submission.csv"
     combined.to_csv(combined_output_path, index=False)
 
-    print(f"\n=== Combined {len(combined)} rows from {len(hospital_dirs)} hospitals ===")
-    for name, df in per_hospital:
-        print(f"  {name}: {len(df)} rows")
+    n_scored = sum(1 for *_, s in per_hospital if s)
+    print(f"\n=== Combined {len(combined)} rows from {n_scored} scored hospital(s) "
+          f"(of {len(hospital_dirs)} run) ===")
+    for name, df, scored_flag in per_hospital:
+        tag = "scored" if scored_flag else "dev/calibration only -- excluded from combined file"
+        print(f"  {name}: {len(df)} rows ({tag})")
     print(f"Wrote {combined_output_path}")
 
 
