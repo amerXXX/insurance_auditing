@@ -1,0 +1,121 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.58in]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\setlist[itemize]{leftmargin=1.0em,nosep,topsep=1pt,parsep=0pt}
+\renewcommand{\arraystretch}{1.02}
+\pagestyle{empty}
+
+\begin{document}
+\footnotesize
+
+\begin{center}
+{\large\bfseries Decision Log}\\[2pt]
+H1 \texttt{provider\_services\_agreement.md} (INS-H1-2024-0417) \quad
+H4 \texttt{conditional\_reimbursement\_agreement.md} (INS-H4-2024-2049) \quad
+H5 \texttt{network\_reimbursement\_agreement.md} (INS-H5-2024-0731)\\[2pt]
+Hospital 1 is the labelled development set (calibration only, not scored); Hospitals 4 and 5 are scored.
+Hospitals 2 and 3 were not attempted.
+\end{center}
+
+\vspace{-3pt}
+\section*{\normalsize 1.\; Assumptions}
+\vspace{-4pt}
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+& \textbf{Hospital 1} & \textbf{Hospital 4} & \textbf{Hospital 5} \\
+\midrule
+Base rates            & Section 4              & Section 3               & Section 4, Table 1 \\
+Daily caps            & Section 8              & Section 6               & column of Table 1 \\
+Facility multiplier   & single site, $1\times$ & single site, $1\times$  & Table 2, 3 sites \\
+Plan-tier multiplier  & tier-blind, $1\times$  & tier-blind, $1\times$   & Table 3, 3 tiers \\
+Weekend uplifts       & Section 6              & Section 10: ``None.''   & Section 6 \\
+Invoicing checks      & Section 11             & Section 11              & Section 10 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace{-2pt}
+
+\begin{itemize}
+\item \textbf{Execution order} (H1 3.2, H4 4.1, H5 3.1), identical in all three contracts: bundle
+substitution $\to$ facility multiplier $\to$ plan-tier multiplier $\to$ premium/uplift $\to$ cumulative
+volume discount; the line total is the resulting unit rate $\times$ billed quantity.
+\item \textbf{Rounding:} integer cents, half-up, applied after \emph{each} step rather than once at the end.
+Material, not cosmetic: through Hospital 5's two multiplier stages alone the conventions diverge on roughly
+7\% of sampled lines (e.g.\ $156{,}675\times1.1\times0.92$ gives 158{,}556 step-wise vs 158{,}555 rounded once).
+\item \textbf{Structure is re-derived per contract}, never aligned positionally --- section numbering differs
+across all three. Every table is parsed from its own clause heading and its row count asserted against a
+manual read before anything downstream uses it.
+\item \textbf{Unpriceable lines} (unmatched description, malformed date, unknown facility or tier) carry the
+billed amount through as a \emph{provisional} expected total at reduced confidence --- never dropped, never
+assigned an invented rate. Assumed better to state uncertainty than to publish a confident wrong figure.
+\item \textbf{Confidence} is a deterministic audit-policy score reflecting evidence quality, not a
+probability, and is reported as such.
+\end{itemize}
+
+\vspace{-3pt}
+\section*{\normalsize 2.\; Clauses that read two ways, and the reading taken}
+\vspace{-4pt}
+\begin{itemize}
+\item \textbf{Duplicate-billing scope (H4 11.3).} The clause bars billing a service twice for the same
+patient and date, but cites a section listing only 18 capped services. \emph{Reading A:} it covers only
+those 18. \emph{Reading B:} it is free-standing and covers every service. \textbf{Took B.} Consequence:
+5 duplicate lines across 4 invoices, all on uncapped services, are flagged that Reading A would leave clean.
+\item \textbf{Threshold-premium base.} Whether the premium applies to every unit on a day the threshold is
+crossed, or only to the units above it. \textbf{Took ``all units'',} once the daily aggregate breaches the
+threshold. The contract text cannot settle this either way; the narrower reading stays defensible.
+\item \textbf{Daily-cap allocation.} Contracts state per-patient per-day maxima but not how to allocate them
+across several line items. \textbf{Took ascending \texttt{line\_id} order}, zeroing the billable quantity of
+lines beyond the cap.
+\item \textbf{Volume-discount scope.} ``Aggregated across all patients'' does not say how to group.
+\textbf{Took hospital-wide across the whole term}, counted in service-date then \texttt{line\_id} order, the
+discount applying strictly \emph{after} the line that crosses the threshold; where two tiers are met, the
+deeper applies.
+\item \textbf{Premium vs.\ uplift ordering (H5 3.1(d)).} The clause groups ``any premium or uplift'' into one
+stage without ordering them. \textbf{Took Section 5 premium, then Section 6 uplift}, following H1. The
+alternative differs only by rounding, and only on lines where both fire.
+\item \textbf{Which reused invoice ID is the erroneous one.} No contract says. \textbf{Took the later
+occurrence}, recovering the transaction group from the line-ID prefix and mapping groups chronologically onto
+invoice occurrences. Validated against H1's labels --- a calibration choice, disclosed as such rather than
+presented as contract-derived.
+\item \textbf{Two sources for the same rate tables (H5).} The tables ship inline in the agreement and again as
+a separate PDF, with no stated precedence. Rather than pick one, both were extracted and compared
+value-by-value before any pricing code was written: all 84 services agree exactly on unit basis, base rate,
+daily cap and all six multipliers, so the Markdown is parsed as the single source. Had they disagreed, the
+disagreement itself --- not a choice between them --- would have been the finding to report.
+\end{itemize}
+
+\vspace{-3pt}
+\section*{\normalsize 3.\; Ambiguities not resolved, and what was done about each}
+\vspace{-4pt}
+\begin{itemize}
+\item \textbf{Daily-cap corrected totals (H1, 4 invoices).} The literal cap reading does not reproduce the
+labelled totals. In three of the four, the implied ``correct'' billable quantity is exactly 3 units
+regardless of the service's stated cap (4, 12, 8) or the quantity billed (9, 14, 11); the fourth
+(\texttt{INV-H1-000049}) carries a simultaneous premium error on the same line, so its implied quantity (9)
+is confounded and not independent evidence. Cross-invoice cumulative counts and unit-basis conversion were
+both ruled out, and Section 8 carries no interpretive clause. \emph{Done:} kept the contract-faithful
+reading and disclosed the residual rather than hard-coding the labels. Most likely an artifact of how the
+synthetic errors were injected, not a rule an auditor could recover.
+\item \textbf{Descriptions naming no clinical specialty (H1, \texttt{INV-H1-000236}).} ``Fract Outpatient
+Radiotherapy'' matches confidently to the sole Outpatient-prefixed candidate, where the label reads
+\texttt{unknown\_service}. Two general fixes were tested and \emph{rejected on evidence}: raising the score
+and gap thresholds did not change this match while breaking two correct ones; a missing-anchor penalty fixed
+it but cost 47 false positives (precision $1.000\to0.552$). \emph{Done:} accepted as a disclosed limitation
+--- one invoice in 913 is not worth 47 wrong accusations.
+\item \textbf{Bundled rates as secondary price evidence.} The matcher's tie-break ignores bundle-substituted
+rates in H1 and H4, so bundle-linked ambiguous descriptions are systematically under-resolved. \emph{Done:}
+left them in the review queue under ``flag, don't guess''; closed for H5, whose plausible-price set models
+both the multipliers and the bundled rate.
+\item \textbf{No ground truth beyond Hospital 1.} H4 and H5 inherit H1's calibration rather than being
+verified against labels, so their confidence figures are carried over, not measured. \emph{Done:} validated
+H5 internally instead --- all 974 invoices it reports clean reconcile exactly against billed totals, and that
+holds at 100\% independently within each of the three facilities and each of the three plan tiers, the check
+that would fail first if a multiplier column were mismapped. This confirms the engine reproduces the
+contract; it cannot detect a misreading of the contract itself.
+\end{itemize}
+
+\end{document}

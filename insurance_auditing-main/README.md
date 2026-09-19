@@ -82,9 +82,9 @@ the 974 invoices it reports as clean, 100% reconcile exactly against their
 billed totals, and that holds independently across all three facilities and
 all three plan tiers — the check that would break first if a multiplier
 column were mismapped. Per-hospital decision logs are the trailing comment
-block of each pipeline's last step. See `../one_page_Logs.pdf` for the
-one-page decision log and `../Error_Analysis_HP1.pdf` for the hospital-1
-error analysis.
+block of each pipeline's last step. See `../DecisionLogs.pdf`
+(source: `../DecisionLogs.tex`) for the one-page decision log and
+`../Error_Analysis_HP1.pdf` for the hospital-1 error analysis.
 
 ## What you have
 

@@ -7,7 +7,7 @@
 
 ## User request
 
-> i am not confident with the work you use the same note but add the reamiang work
+> i am not confident with the what appraoch you use to extract servece matching on same note
 
 Supplied a seven-step ordered roadmap (Section 10 → service matching → Section 11
 checks → pricing in contract order → aggregation → label comparison → submission
